@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Dodecahedron</title>
+</head>
+<body>
+
+<canvas id="gl-canvas" width="724" height="724"></canvas>
+
+
+<button id="ButtonX">Rotate X</button>
+<button id="ButtonY">Rotate Y</button>
+<button id="ButtonZ">Rotate Z</button>
+<button id="ButtonT">Toggle Rotation</button>
+<div style="display: flex; flex-direction: row;">
+
+</div>
+<div>
+    <div>
+        <p>Velocity</p>
+        <input type="range" id="velocityX" min="-5" max="5" step="0.1" value="0.0"> X
+        <input type="range" id="velocityY" min="-5" max="5" step="0.1" value="0.0"> Y
+        <input type="range" id="velocityZ" min="-5" max="5" step="0.1" value="0.0"> Z
+    </div>
+    <div>
+        <input type="range" id="mass" min="0" max="100.0" step="1" value="1"> Mass
+    </div>
+    <div>
+        <p>Force</p>
+        <input type="range" id="forceX" min="0" max="5" step="0.1" value="0.0"> X
+        <input type="range" id="forceY" min="0" max="5" step="0.1" value="0.0"> Y
+        <input type="range" id="forceZ" min="0" max="5" step="0.1" value="0.0"> Z
+    </div>
+</div>
+<div>
+    <p>Ambient Light Color</p>
+    <input type="range" id="ambientR" min="0" max="1" step="0.01" value="0.5">
+    <input type="range" id="ambientG" min="0" max="1" step="0.01" value="0.5">
+    <input type="range" id="ambientB" min="0" max="1" step="0.01" value="0.5">
+</div>
+
+
+<div>
+    <p>Diffuse Light Color</p>
+    <input type="range" id="diffuseR" min="0" max="1" step="0.01" value="1.0">
+    <input type="range" id="diffuseG" min="0" max="1" step="0.01" value="1.0">
+    <input type="range" id="diffuseB" min="0" max="1" step="0.01" value="1.0">
+</div>
+
+
+<div>
+    <p>Specular Light Color</p>
+    <input type="range" id="specularR" min="0" max="1" step="0.01" value="1.0">
+    <input type="range" id="specularG" min="0" max="1" step="0.01" value="1.0">
+    <input type="range" id="specularB" min="0" max="1" step="0.01" value="1.0">
+</div>
+
+
+<div>
+    <p>Light Position</p>
+    <input type="range" id="lightX" min="-10" max="10" step="0.1" value="1.0">
+    <input type="range" id="lightY" min="-10" max="10" step="0.1" value="1.0">
+    <input type="range" id="lightZ" min="-10" max="10" step="0.1" value="1.0">
+</div>
+
+<div>
+    <input type="range" id="bounds" min="0" max="100.0" step="1" value="5"> Bounds
+</div>
+
+<div>
+    <input type="range" id="theta" min="0" max="50.0" step="1" value="1"> Theta
+</div>
+<div>
+    <input type="range" id="phi" min="0" max="50.0" step="1" value="0"> Phi
+</div>
+<div>
+    <input type="range" id="radius" min="0" max="100.0" step="1" value="10"> Radius
+</div>
+
+<div>
+    <input type="range" id="fov" min="30" max="120" step="1" value="60"> Field of View
+</div>
+
+<div>
+    <input type="range" id="near" min="0.1" max="5.0" step="0.1" value="0.1"> Near
+</div>
+
+<div>
+    <input type="range" id="far" min="10.0" max="100.0" step="1" value="100"> Far
+</div>
+
+
+
+
+<!-- Vertex Shader -->
+<script id="vertex-shader" type="x-shader/x-vertex">
+    #version 300 es
+
+    in vec4 aPosition;
+    in vec3 aNormal;
+    
+    uniform mat4 uModelViewMatrix;
+    uniform mat4 uProjectionMatrix;
+    
+    out vec3 vNormal;
+    out vec4 vPosition;
+    in vec4 aColor;
+    out vec4 vColor;
+    
+    void main() {
+        vPosition = uModelViewMatrix * aPosition;
+        vNormal = normalize(mat3(uModelViewMatrix) * aNormal);
+        gl_Position = uProjectionMatrix * vPosition;
+        vColor = aColor;
+    }
+    
+</script>
+
+<!-- Fragment Shader -->
+<script id="fragment-shader" type="x-shader/x-fragment">
+    #version 300 es
+    precision mediump float;
+    
+    in vec3 vNormal;
+    in vec4 vPosition;
+    in vec4 vColor;
+    
+    uniform vec4 uAmbientProduct;
+    uniform vec4 uDiffuseProduct;
+    uniform vec4 uSpecularProduct;
+    uniform vec4 uLightPosition;
+    uniform float uShininess;
+    
+    out vec4 fColor;
+    
+    void main() {
+        vec3 L = normalize(vec3(uLightPosition - vPosition));
+        vec3 E = normalize(-vPosition.xyz);
+        vec3 H = normalize(L + E);
+    
+        // Ambient term
+        vec4 ambient = uAmbientProduct * vColor;
+    
+        // Diffuse term
+        float Kd = max(dot(L, vNormal), 0.0);
+        vec4 diffuse = Kd * uDiffuseProduct * vColor;
+    
+        // Specular term
+        float Ks = pow(max(dot(vNormal, H), 0.0), uShininess);
+        vec4 specular = Ks * uSpecularProduct;
+    
+        fColor = ambient + diffuse + specular;
+        fColor.a = 1.0;
+    }
+</script>
+
+<!-- External JS Libraries -->
+<script src="../initShaders.js"></script>
+<script src="../MVnew.js"></script>
+
+<!-- Main JavaScript -->
+<script src="dodecahedron.js"></script>
+
+</body>
+</html>
